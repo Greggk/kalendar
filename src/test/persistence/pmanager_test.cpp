@@ -80,9 +80,9 @@ void PManagerTest::test_remove_db() {
     PManager pm;
     bool ret = pm.remove_db();
     if (pm.get_db_name() != DEFAULT_DATABASE_NAME) {
-        ret = ret && !std::experimental::filesystem::exists(pm.get_db_folder() + pm.get_db_name());
+        ret = ret && !std::filesystem::exists(pm.get_db_folder() + pm.get_db_name());
     } else {
-        ret = ret && std::experimental::filesystem::exists(pm.get_db_folder() + pm.get_db_name());
+        ret = ret && std::filesystem::exists(pm.get_db_folder() + pm.get_db_name());
     }
     ASSERT (ret)
 }
@@ -91,7 +91,7 @@ void PManagerTest::test_init_db() {
     Test::print("test_init_db ");
     PManager pm;
     pm.init_db("test.sql");
-    ASSERT (std::experimental::filesystem::exists(pm.get_db_folder() + "test.sql"))
+    ASSERT (std::filesystem::exists(pm.get_db_folder() + "test.sql"))
     pm.remove_db();
 }
 
@@ -101,10 +101,10 @@ void PManagerTest::test_get_db_list() {
     PManager pm;
     pm.remove_db();
     pm.init_db(names[0]);
-    bool ret = (std::experimental::filesystem::exists(pm.get_db_folder() + names[0]));
+    bool ret = (std::filesystem::exists(pm.get_db_folder() + names[0]));
     pm.remove_db();
     pm.init_db(names[1]);
-    ASSERT (ret && std::experimental::filesystem::exists(pm.get_db_folder() + names[1]))
+    ASSERT (ret && std::filesystem::exists(pm.get_db_folder() + names[1]))
     pm.remove_db();
 }
 

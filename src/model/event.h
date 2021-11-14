@@ -9,7 +9,7 @@
  * start = end = 29/01/2105 09:40 , the UTC timestamp is: 4262665200
  * Note: this value is incompatible for 32bit systems due to the 2038 year bug (Reference: https://en.wikipedia.org/wiki/Year_2038_problem)
  * The todo is only an high-level concept managed by the logic view, thus the persistence part consider them as normal events. */
-//#define BIT32
+#define BIT32
 #ifndef BIT32
 // As explained above, this is for 64 bit systems
 #define TODO_DATE 4262665200

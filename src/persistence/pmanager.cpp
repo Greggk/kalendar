@@ -72,8 +72,8 @@ string PManager::get_db_name() {
 
 vector<string> PManager::get_db_list() {
     vector<string> db_list;
-    for (experimental::filesystem::directory_entry e : experimental::filesystem::directory_iterator(this->db_path.substr(0, this->db_path.find_last_of('/') ))) {
-        experimental::filesystem::path p = e.path();
+    for (filesystem::directory_entry e : filesystem::directory_iterator(this->db_path.substr(0, this->db_path.find_last_of('/') ))) {
+        filesystem::path p = e.path();
         if (p.extension() == ".sql")
             db_list.push_back(p.filename());
     }

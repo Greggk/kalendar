@@ -2,10 +2,10 @@
 
 PluginManager::PluginManager()
 {
-    experimental::filesystem::path dir(TOOLS_FOLDER);
-    experimental::filesystem::create_directory(dir);
-    for (experimental::filesystem::directory_entry e : experimental::filesystem::directory_iterator(TOOLS_FOLDER)) {
-        experimental::filesystem::path p = e.path();
+    filesystem::path dir(TOOLS_FOLDER);
+    filesystem::create_directory(dir);
+    for (filesystem::directory_entry e : filesystem::directory_iterator(TOOLS_FOLDER)) {
+        filesystem::path p = e.path();
         if ((p.extension() == ".sh") || (p.extension() == ".bat"))
             this->tools.push_back(p.filename());
     }
