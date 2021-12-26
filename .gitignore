@@ -1,2 +1,10 @@
 src/Kalendar.pro.user
 *.gch
+*.obj
+*.lst
+moc_*
+*.exe
+*.res
+*.ts
+src/release
+src/debug
