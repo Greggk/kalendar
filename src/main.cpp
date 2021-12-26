@@ -5,6 +5,8 @@
 #include <QCommandLineParser>
 #include <QPushButton>
 #include <QHBoxLayout>
+#include <QLocale>
+#include <QTranslator>
 #include "test/test.h"
 #include "util/linuxnotifymanager.h"
 #include "util/eventutil.h"
@@ -15,11 +17,22 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     int ret = 0;
-    #if RUN_TESTS
+#if RUN_TESTS
     Test t;
     t.test_persistence();
     t.test_util();
-    #else
+#else
+    QString locale = QLocale::system().name();
+    QTranslator translator, qtTranslator;
+
+    //QTextCodec::setCodecForTr( QTextCodec::codecForName("utf8"));
+    translator.load(QString("kalendar_") + locale);
+
+    a.installTranslator(&translator);
+
+    qtTranslator.load( QString("qt_") + locale, QLibraryInfo::location( QLibraryInfo::TranslationsPath ));
+    a.installTranslator( &qtTranslator );
+
     bool cli = false;
     QCommandLineParser parser;
     parser.addHelpOption();

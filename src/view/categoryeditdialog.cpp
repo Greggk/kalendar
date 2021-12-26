@@ -23,12 +23,12 @@ CategoryEditDialog::CategoryEditDialog(CategoryDialog *parentDialog, QWidget *pa
     if (selected_category != NULL)
         edit_name->setText(selected_category->getName().c_str());
     else
-        edit_name->setPlaceholderText("Type a name for the new category");
+        edit_name->setPlaceholderText(tr("Type a name for the new category"));
     hl->addWidget(edit_name);
     hl->addWidget(button_color);
     connect(button_color, &QPushButton::clicked, this, &CategoryEditDialog::on_button_color_click);
-    QPushButton *button_save = new QPushButton("&Save");
-    QPushButton *button_delete = new QPushButton("&Delete");
+    QPushButton *button_save = new QPushButton(tr("&Save"));
+    QPushButton *button_delete = new QPushButton(tr("&Delete"));
     connect(button_delete, &QPushButton::clicked, this, &CategoryEditDialog::on_button_delete_click);
     connect(button_save, &QPushButton::clicked, this, &CategoryEditDialog::on_button_save_click);
     hl2->addWidget(button_save);
@@ -37,7 +37,7 @@ CategoryEditDialog::CategoryEditDialog(CategoryDialog *parentDialog, QWidget *pa
     vl->addLayout(hl2);
     this->setModal(true);
     this->setWindowFlags(Qt::WindowCloseButtonHint);
-    this->setWindowTitle("Category Edit Dialog");
+    this->setWindowTitle(tr("Category Edit Dialog"));
     setLayout(vl);
 }
 
@@ -47,7 +47,7 @@ CategoryEditDialog::~CategoryEditDialog() {
 
 void CategoryEditDialog::on_button_save_click() {
     if(this->edit_name->text().length() < 3) {
-        QMessageBox::critical(this, "Error", "The name must have a length greater than 2", QMessageBox::Ok);
+        QMessageBox::critical(this, tr("Error"), tr("The name must have a length greater than 2"), QMessageBox::Ok);
         return;
     }
     Category category(0, this->edit_name->text().toStdString(), this->selected_color.name().toStdString());
@@ -63,21 +63,21 @@ void CategoryEditDialog::on_button_save_click() {
         this->close();
         delete this;
     } else {
-        QMessageBox::critical(this, "Error", "Persistence error. Try with a different name or color.");
+        QMessageBox::critical(this, tr("Error"), tr("Persistence error. Try with a different name or color."));
     }
 }
 
 void CategoryEditDialog::on_button_delete_click() {
     if (this->parentDialog->getListWidget()->selectedItems().size() == 0) {
-        QMessageBox::critical(this, "Error", "No category selected", QMessageBox::Ok);
+        QMessageBox::critical(this, tr("Error"), tr("No category selected"), QMessageBox::Ok);
         return;
     }
     QString selected_category = this->parentDialog->getListWidget()->selectedItems().at(0)->text();
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Confirm", QString("Do you want to delete ") + selected_category + QString("?"), QMessageBox::Yes|QMessageBox::No);
+    reply = QMessageBox::question(this, tr("Confirm"), QString(tr("Do you want to delete ")) + selected_category + QString("?"), QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes) {
         if (!this->parentDialog->getPManager()->remove_category(this->parentDialog->getCategoryList()[this->parentDialog->getListWidget()->currentIndex().row()]))
-            QMessageBox::critical(this, "Error", "Persistence error. You can't remove a category used by events. First remove these events and then try again.");
+            QMessageBox::critical(this, tr("Error"), tr("Persistence error. You can't remove a category used by events. First remove these events and then try again."));
         else {
             this->parentDialog->load_categories();
             this->close();
