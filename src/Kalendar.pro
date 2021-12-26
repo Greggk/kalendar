@@ -10,7 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Kalendar
 TEMPLATE = app
-
+RC_ICONS = Kalendar.ico
 
 SOURCES += main.cpp\
     persistence/pmanager.cpp \
@@ -64,8 +64,18 @@ HEADERS  += model/event.h \
     view/settings.h
 
 QMAKE_LIBS += -lsqlite3
-QMAKE_LIBS += -lstdc++fs
-QMAKE_CXXFLAGS += -std=c++11
+#QMAKE_LIBS += -lstdc++fs
+QMAKE_CXXFLAGS += -std=c++17
 
 #For DEBUG purpose
 #QMAKE_CXXFLAGS += -g
+
+TRANSLATIONS =	language/kalendar_de.ts \
+		language/kalendar_es.ts \
+		language/kalendar_fr.ts \
+		language/kalendar_it.ts \
+		language/kalendar_ja.ts \
+		language/kalendar_nl.ts \
+		language/kalendar_ru.ts \
+		language/kalendar_zh_cn.ts \
+		language/kalendar_zh_tw.ts
