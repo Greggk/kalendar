@@ -5,6 +5,9 @@
 void EventDialog::setEvent(Event *event) {
     this->everyMonth->setEnabled(false); /* Not supported for now */
     this->everyYear->setEnabled(false);
+    this->everyMonthDay->setEnabled(false);
+    this->everyYearDay->setEnabled(false);
+    this->everyWeek->setEnabled(false);
     this->event = event;
     if (event != NULL) {
         this->edit_name->setText(event->getName().c_str());
@@ -41,30 +44,30 @@ EventDialog::EventDialog(View *parentView, Date start_date, Date end_date, QWidg
     this->setFixedWidth(400);
     this->setFixedHeight(500);
     this->setModal(true);
-    this->setWindowTitle("Event Manager");
+    this->setWindowTitle(tr("Event Manager"));
 
     this->pm = new SecurePManager;
     this->event = NULL;
 
     QVBoxLayout *main_layout = new QVBoxLayout;
     QHBoxLayout *first_row = new QHBoxLayout;
-    QLabel *label_name = new QLabel("Name: ");
+    QLabel *label_name = new QLabel(tr("Name: "));
     this->edit_name = new QLineEdit;
     this->edit_name->setMaxLength(100);
     first_row->addWidget(label_name);
     first_row->addWidget(this->edit_name);
     main_layout->addLayout(first_row);
     QHBoxLayout *second_row = new QHBoxLayout;
-    QLabel *label_place = new QLabel("Place: ");
+    QLabel *label_place = new QLabel(tr("Place: "));
     this->edit_place = new QLineEdit;
     second_row->addWidget(label_place);
     second_row->addWidget(this->edit_place);
     main_layout->addLayout(second_row);
-    main_layout->addWidget(new QLabel("Description: "));
+    main_layout->addWidget(new QLabel(tr("Description: ")));
     this->edit_description = new QPlainTextEdit;
     main_layout->addWidget(this->edit_description);
     QHBoxLayout *third_row = new QHBoxLayout;
-    QLabel *label_category = new QLabel("Category: ");
+    QLabel *label_category = new QLabel(tr("Category: "));
     this->edit_category = new QComboBox;
     this->category_list = this->pm->get_categories();
     for (Category *category : category_list) {
@@ -76,14 +79,14 @@ EventDialog::EventDialog(View *parentView, Date start_date, Date end_date, QWidg
     third_row->addWidget(this->edit_category);
     main_layout->addLayout(third_row);
     QHBoxLayout *fourth_row = new QHBoxLayout;
-    QLabel *label_todo = new QLabel("TODO: ");
+    QLabel *label_todo = new QLabel(tr("TODO: "));
     this->cbtodo = new QCheckBox;
     connect(cbtodo, &QCheckBox::toggled, this, &EventDialog::on_checkbox_todo_toggle);
     fourth_row->addWidget(label_todo);
     fourth_row->addWidget(cbtodo);
     main_layout->addLayout(fourth_row);
     QHBoxLayout *fifth_row = new QHBoxLayout;
-    QLabel *label_start = new QLabel("Start: ");
+    QLabel *label_start = new QLabel(tr("Start: "));
     this->edit_start = new QDateTimeEdit;
     this->edit_start->setCalendarPopup(true);
     QDateTime todoDate = QDateTime::fromTime_t(TODO_DATE);
@@ -95,7 +98,7 @@ EventDialog::EventDialog(View *parentView, Date start_date, Date end_date, QWidg
     fifth_row->addWidget(this->edit_start);
     main_layout->addLayout(fifth_row);
     QHBoxLayout *sixth_row = new QHBoxLayout;
-    QLabel *label_end = new QLabel("End: ");
+    QLabel *label_end = new QLabel(tr("End: "));
     this->edit_end = new QDateTimeEdit;
     this->edit_end->setCalendarPopup(true);
     this->edit_end->setDateTime(QDateTime(QDate(end_date.getYear(), end_date.getMonth(), end_date.getMonthDay())));
@@ -103,23 +106,29 @@ EventDialog::EventDialog(View *parentView, Date start_date, Date end_date, QWidg
     sixth_row->addWidget(label_end);
     sixth_row->addWidget(this->edit_end);
     main_layout->addLayout(sixth_row);
-    QHBoxLayout *seventh_row = new QHBoxLayout;
-    QLabel *label_recurrent = new QLabel("Recurrence: ");
-    this->everyMonth = new QRadioButton("Monthly");
-    this->everyYear = new QRadioButton("Yearly");
+    QVBoxLayout *seventh_row = new QVBoxLayout;
+    QLabel *label_recurrent = new QLabel(tr("Recurrence: "));
+    this->everyMonth = new QRadioButton(tr("Monthly-Date"));
+    this->everyYear = new QRadioButton(tr("Yearly-Date"));
+    this->everyMonthDay = new QRadioButton(tr("Monthly-WeekDay"));
+    this->everyYearDay = new QRadioButton(tr("Yearly-WeekDay"));
+    this->everyWeek = new QRadioButton(tr("Weekly"));
     this->options = new QGroupBox;
     seventh_row->addWidget(label_recurrent);
     seventh_row->addWidget(this->everyMonth);
     seventh_row->addWidget(this->everyYear);
+    seventh_row->addWidget(this->everyMonthDay);
+    seventh_row->addWidget(this->everyYearDay);
+    seventh_row->addWidget(this->everyWeek);
     options->setLayout(seventh_row);
     main_layout->addWidget(options);
     QHBoxLayout *last_row = new QHBoxLayout;
-    QPushButton *button_cancel = new QPushButton("&Cancel");
+    QPushButton *button_cancel = new QPushButton(tr("&Cancel"));
     connect(button_cancel, &QPushButton::clicked, this, &EventDialog::on_button_cancel_click);
-    button_delete = new QPushButton("&Delete");
+    button_delete = new QPushButton(tr("&Delete"));
     button_delete->setEnabled(false);
     connect(button_delete, &QPushButton::clicked, this, &EventDialog::on_button_delete_click);
-    QPushButton *button_save = new QPushButton("&Save");
+    QPushButton *button_save = new QPushButton(tr("&Save"));
     connect(button_save, &QPushButton::clicked, this, &EventDialog::on_button_save_click);
     last_row->addWidget(button_cancel);
     last_row->addWidget(button_delete);
@@ -159,7 +168,7 @@ void EventDialog::on_button_save_click() {
     bool isTodo = !this->edit_start->isEnabled();
 
     if (this->edit_name->text().length() < 3) {
-        QMessageBox::critical(this, "Error", "The name must have a length greater than 2", QMessageBox::Ok);
+        QMessageBox::critical(this, tr("Error"), tr("The name must have a length greater than 2"), QMessageBox::Ok);
         return;
     }
 
@@ -169,7 +178,7 @@ void EventDialog::on_button_save_click() {
         this->edit_end->setDateTime(todoDate);
     } else {
         if (this->edit_start->dateTime() > this->edit_end->dateTime()) {
-            QMessageBox::critical(this, "Error", "Invalid range of time selected", QMessageBox::Ok);
+            QMessageBox::critical(this, tr("Error"), tr("Invalid range of time selected"), QMessageBox::Ok);
             return;
         }
     }
@@ -190,11 +199,30 @@ void EventDialog::on_button_save_click() {
     if ((this->event != NULL) && (this->pm->replace_event(this->event, newEvent))) {
         refresh();
         this->event = new Event(*newEvent);
-    } else if ((this->event == NULL) && (this->everyMonth->isChecked() || this->everyYear->isChecked())) {
-        int reply = QMessageBox::warning(this, "Attention", "A recurrent event is considered as multiple independent events, after this operation you can modify it only as a single event.", QMessageBox::Yes | QMessageBox::No);
+    } else if ((this->event == NULL) && (this->everyMonth->isChecked() || this->everyYear->isChecked() ||
+                                         this->everyMonthDay->isChecked() || this->everyYearDay->isChecked() ||
+                                         this->everyWeek->isChecked())) {
+        int reply = QMessageBox::warning(this, tr("Attention"), tr("A recurrent event is considered as multiple independent events, after this operation you can modify it only as a single event. Recurrent events by Weekday not supported in week 5"), QMessageBox::Yes | QMessageBox::No);
         if (reply == QMessageBox::Yes) {
+            int month_week = 0;
+            int month_week_next = 0;
+            if (this->everyMonthDay->isChecked() || this->everyYearDay->isChecked()) {
+                if (start.date().day() <= 7)
+                    month_week = 1;
+                else if (start.date().day() > 7 && start.date().day() <= 14)
+                     month_week = 2;
+                else if (start.date().day() > 14 && start.date().day() <= 21)
+                     month_week = 3;
+                else if (start.date().day() > 21 && start.date().day() <= 28)
+                    month_week = 4;
+                else
+                    month_week = 5;
+            }
             int offset = 8; /* Add the same event to the next 8 years */
-            if (this->everyMonth->isChecked()) offset = 24; /* Add the same event to every month of the next 2 years */
+            if (this->everyMonth->isChecked() || this->everyMonthDay->isChecked())
+                offset = 24; /* Add the same event to every month of the next 2 years */
+            if (this->everyWeek->isChecked())
+                offset = 52; /* Add the same event to every week of the next year */
             bar->setRange(0, offset);
             this->layout()->addWidget(bar);
             Event *previous = NULL;
@@ -206,6 +234,43 @@ void EventDialog::on_button_save_click() {
                 if (this->everyMonth->isChecked()) {
                     start = start.addMonths(1);
                     end = end.addMonths(1);
+                } else if (this->everyMonthDay->isChecked() && month_week != 5) {
+                    start = start.addDays(28);
+                    end = end.addDays(28);
+                    if (start.date().day() <= 7)
+                        month_week_next = 1;
+                    else if (start.date().day() > 7 && start.date().day() <= 14)
+                         month_week_next = 2;
+                    else if (start.date().day() > 14 && start.date().day() <= 21)
+                         month_week_next = 3;
+                    else if (start.date().day() > 21 && start.date().day() <= 28)
+                        month_week_next = 4;
+                    else
+                        month_week_next = 5;
+                    if (month_week != month_week_next) {
+                        start = start.addDays(7);
+                        end = end.addDays(7);
+                    }
+                } else if (this->everyYearDay->isChecked() && month_week != 5) {
+                    start = start.addDays(364);
+                    end = end.addDays(364);
+                    if (start.date().day() <= 7)
+                        month_week_next = 1;
+                    else if (start.date().day() > 7 && start.date().day() <= 14)
+                        month_week_next = 2;
+                    else if (start.date().day() > 14 && start.date().day() <= 21)
+                        month_week_next = 3;
+                    else if (start.date().day() > 21 && start.date().day() <= 28)
+                        month_week_next = 4;
+                    else
+                        month_week_next = 5;
+                    if (month_week != month_week_next) {
+                        start = start.addDays(7);
+                        end = end.addDays(7);
+                    }
+                } else if (this->everyWeek->isChecked()) {
+                    start = start.addDays(7);
+                    end = end.addDays(7);
                 } else {
                     start = start.addYears(1);
                     end = end.addYears(1);
@@ -227,7 +292,7 @@ void EventDialog::on_button_save_click() {
         ret = false;
 
     if (!ret) {
-        QMessageBox::critical(this, "Error", "Persistence error. Try with a different name.", QMessageBox::Ok);
+        QMessageBox::critical(this, tr("Error"), tr("Persistence error. Try with a different name."), QMessageBox::Ok);
         delete bar;
     }
 }

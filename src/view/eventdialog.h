@@ -43,6 +43,9 @@ private:
     QCheckBox *cbtodo;
     QRadioButton *everyMonth;
     QRadioButton *everyYear;
+    QRadioButton *everyMonthDay;
+    QRadioButton *everyYearDay;
+    QRadioButton *everyWeek;
     QGroupBox *options;
     View *parent;
     PManager *pm;
