@@ -7,15 +7,15 @@ CategorySelectDialog::CategorySelectDialog(View *parentView, QString text, QWidg
     ui(new Ui::CategorySelectDialog)
 {
     this->parent = parentView;
-    this->setWindowTitle("Category Selector");
+    this->setWindowTitle(tr("Category Selector"));
     this->pm = new PManager;
     this->selected_category = NULL;
     QHBoxLayout *button_layout = new QHBoxLayout;
     QVBoxLayout *main_layout = new QVBoxLayout;
     this->list_categories = new QComboBox;
     load_categories();
-    QPushButton *button_ok = new QPushButton("OK");
-    QPushButton *button_cancel = new QPushButton("Cancel");
+    QPushButton *button_ok = new QPushButton(tr("OK"));
+    QPushButton *button_cancel = new QPushButton(tr("Cancel"));
     button_cancel->setFixedWidth(50);
     button_ok->setFixedWidth(50);
     connect(button_cancel, &QPushButton::clicked, this, &CategorySelectDialog::on_button_cancel_click);
@@ -40,9 +40,9 @@ void CategorySelectDialog::load_categories() {
 }
 
 void CategorySelectDialog::on_button_cancel_click() {
-    this->selected_category = NULL;
+    //this->selected_category = NULL;
     this->close();
-    delete this;
+    //delete this;
 }
 
 void CategorySelectDialog::on_button_ok_click() {
@@ -53,7 +53,7 @@ void CategorySelectDialog::on_button_ok_click() {
         }
     }
     this->close();
-    delete this;
+    //delete this;
 }
 
 Category* CategorySelectDialog::getSelectedCategory() {
@@ -64,5 +64,6 @@ CategorySelectDialog::~CategorySelectDialog()
 {
     delete ui;
     delete pm;
+    delete selected_category;
     for (Category *category : this->category_list) delete category;
 }

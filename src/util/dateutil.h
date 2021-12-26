@@ -9,6 +9,10 @@
 
 #define SECONDS_IN_1DAY 86400
 
+#if 0 // change this to 1 to build the caledar with Monday as the first day of the week. GKY 12-21-21
+#define WEEK_START_MONDAY
+#endif
+
 using namespace std;
 
 class DateUtil

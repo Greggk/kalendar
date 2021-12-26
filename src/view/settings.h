@@ -29,10 +29,13 @@ class Settings : public QDialog
 private:
     QSpinBox *pastMonthsExpiration;
     Ui::Settings *ui;
+    PManager *pm;
 
 public:
     explicit Settings(QWidget *parent = 0);
     ~Settings();
+
+public slots:
     void on_button_cancel_click();
     void on_button_save_click();
 

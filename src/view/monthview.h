@@ -79,6 +79,7 @@ private:
     QLabelEvent *createLabelEvent(Event *event);
     QFrameExtended *createQFrameExtended(Date *date);
     void createMenu();
+    void createStatusBar();
     void on_button_extended_click(int index);
     CustomDialog *show_progress_bar(QString title);
     void refresh_db_menu();

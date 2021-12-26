@@ -2,30 +2,131 @@
 
 #include <QDebug>
 
-static string months[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
-static string week_days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+//static string months[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+static string week_days[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 DateUtil::DateUtil()
 {
 
 }
 
+string DateUtil::get_literal_month(int m) {
+    QString Month;
+    switch (m) {
+
+    case 1:
+
+        Month = QObject::tr("January");
+        return Month.toStdString();
+
+    case 2:
+
+        Month = QObject::tr("February");
+        return Month.toStdString();
+
+    case 3:
+
+        Month = QObject::tr("March");
+        return Month.toStdString();
+
+    case 4:
+
+        Month = QObject::tr("April");
+        return Month.toStdString();
+
+    case 5:
+
+        Month = QObject::tr("May");
+        return Month.toStdString();
+
+    case 6:
+
+        Month = QObject::tr("June");
+        return Month.toStdString();
+
+    case 7:
+
+        Month = QObject::tr("July");
+        return Month.toStdString();
+
+    case 8:
+
+        Month = QObject::tr("August");
+        return Month.toStdString();
+
+    case 9:
+
+        Month = QObject::tr("September");
+        return Month.toStdString();
+
+    case 10:
+
+        Month = QObject::tr("October");
+        return Month.toStdString();
+
+    case 11:
+
+        Month = QObject::tr("November");
+        return Month.toStdString();
+
+    case 12:
+
+        Month = QObject::tr("December");
+        return Month.toStdString();
+
+    default:
+
+        return string("");
+    }
+}
+
 Date DateUtil::get_current_date() {
     return date_from_timestamp(static_cast <unsigned long> (time(NULL)));
 }
 
-string DateUtil::get_literal_month(int m) {
-    if ((m < 1) || (m > 12))
-        return string("");
-    else
-        return months[m-1];
-}
-
 string DateUtil::numeric2literal_day_of_week(int d) {
-    if ((d < 1) || (d > 7))
+    QString Day;
+    switch (d) {
+
+    case 1:
+
+        Day = QObject::tr("Sunday");
+        return Day.toStdString();
+
+    case 2:
+
+        Day = QObject::tr("Monday");
+        return Day.toStdString();
+
+    case 3:
+
+        Day = QObject::tr("Tuesday");
+        return Day.toStdString();
+
+    case 4:
+
+        Day = QObject::tr("Wednesday");
+        return Day.toStdString();
+
+    case 5:
+
+        Day = QObject::tr("Thursday");
+        return Day.toStdString();
+
+    case 6:
+
+        Day = QObject::tr("Fridy");
+        return Day.toStdString();
+
+    case 7:
+
+        Day = QObject::tr("Saturday");
+        return Day.toStdString();
+
+    default:
+
         return string("");
-    else
-        return week_days[d-1];
+    }
 }
 
 int DateUtil::literal2numeric_day_of_week(const string &d) {
@@ -61,7 +162,11 @@ int DateUtil::get_days_in_month(int month, int year) {
 Date DateUtil::date_from_timestamp(time_t timestamp) {
     const time_t t = timestamp;
     struct tm *tm = localtime(&t);
+#ifdef WEEK_START_MONDAY    
     Date date(tm->tm_mday, tm->tm_wday ?: 7, tm->tm_mon + 1, tm->tm_year + 1900);
+#else
+    Date date(tm->tm_mday, tm->tm_wday + 1 , tm->tm_mon + 1, tm->tm_year + 1900);
+#endif
     //free(tm); segfault?
     return date;
 }

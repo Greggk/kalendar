@@ -1,5 +1,6 @@
 #include "monthview.h"
 #include <QDebug>
+#include <iostream>
 
 void MonthView::on_mouse_move(QFrameExtended *frame) {
     if ((frame->getDate() != NULL) && //Checks if the frame is valid
@@ -13,7 +14,11 @@ void MonthView::on_mouse_move(QFrameExtended *frame) {
                     this->frames[i]->setObjectName("selected");
                     this->frames[i]->setStyleSheet(CELL_STYLE);
                 } else {
+#ifdef WEEK_START_MONDAY
                     if ((i % 7) > 4)
+#else
+                    if ((i % 7) > 5 || (i % 7) == 0 )
+#endif
                         this->frames[i]->setObjectName("holiday");
                     else
                         this->frames[i]->setObjectName("day");
@@ -36,8 +41,12 @@ void MonthView::on_mouse_release(QFrameExtended *frame) {
         /* Clean the selection */
         for (int i = 0; i < 42; i++) {
             if (this->frames[i]->getDate() != NULL) {
+#ifdef WEEK_START_MONDAY
                 if ((i % 7) > 4)
+#else
+                if ((i % 7) > 5 || (i % 7) == 0 )
                     this->frames[i]->setObjectName("holiday");
+#endif
                 else
                     this->frames[i]->setObjectName("day");
                 this->frames[i]->setStyleSheet(CELL_STYLE);
@@ -150,7 +159,7 @@ MonthView::MonthView(QWidget *parent) :
     grid_layout->setVerticalSpacing(0);
 
     //Remove events too old
-    int past_months = this->settings.value(SettingsValues::past_months_expiration, 0).toInt();
+    int past_months = this->pm->get_setting(1);//this->settings.value(SettingsValues::past_months_expiration, 0).toInt();
     if (past_months > 0) {
         Date target = DateUtil::get_first_day_of_month(current_date);
         do {
@@ -182,7 +191,7 @@ MonthView::MonthView(QWidget *parent) :
      connect(window, &QWidgetExtended::mouseMove, this, &MonthView::on_mouse_move);
 
      createMenu();
-
+     createStatusBar();
      // Set QWidget as the central layout of the main window
      setCentralWidget(window);
 }
@@ -266,6 +275,17 @@ void MonthView::createMenu() {
         connect(t, &QAction::triggered, this, [this,tool]{ run_tool(tool); });
         toolsMenu->addAction(t);
     }
+    if (toolsMenu->isEmpty()) {
+        QAction *t = new QAction(tr("no tools"), this);
+        t->setStatusTip(tr("To populate this menu place cmd or btm (4OS2) scripts in the tools directory. Requires a restart"));
+        toolsMenu->addAction(t);
+    }
+
+}
+
+void MonthView::createStatusBar()
+{
+    statusBar()->showMessage(tr("Ready"));
 }
 
 void MonthView::switch_db(string db) {
@@ -284,7 +304,7 @@ void MonthView::refresh_db_menu() {
         connect(t, &QAction::triggered, this, [this,db]{ switch_db(db); });
         dbMenu->addAction(t);
     }
-    QAction *newdb = new QAction(tr("&New database"), this);
+    QAction *newdb = new QAction("&New database", this);
     connect(newdb, &QAction::triggered, this, &MonthView::create_database);
     dbMenu->addAction(newdb);
 }
@@ -295,8 +315,8 @@ void MonthView::run_tool(string tool) {
 
 void MonthView::create_database() {
     bool ok;
-    QString name = QInputDialog::getText(this, tr("QInputDialog::getText()"),
-                                             tr("Database name:"), QLineEdit::Normal,
+    QString name = QInputDialog::getText(this, "QInputDialog::getText()",
+                                             "Database name:", QLineEdit::Normal,
                                              "", &ok);
     if (ok && !name.isEmpty()) {
         this->pm->init_db(name.toStdString() + ".sql");
@@ -321,15 +341,18 @@ void MonthView::exit() {
 }
 
 void MonthView::filter_by_category() {
-    CategorySelectDialog *dialog = new CategorySelectDialog(this,"Show only events in this category: ");
+    CategorySelectDialog *dialog = new CategorySelectDialog(this,tr("Show only events in this category:/n Select \"All\" to show all catagories"));
     dialog->setModal(true);
     dialog->exec(); //Blocking call
     this->selected_category = dialog->getSelectedCategory();
+    if (this->selected_category && this->selected_category->getId() == 2)
+        this->selected_category = NULL;
     refresh_events();
+    delete dialog;
 }
 
 void MonthView::delete_db() {
-    int ret = QMessageBox::question(this, "Confirm", "Do you really want to delete all the events and categories of the current database?", QMessageBox::Yes | QMessageBox::No);
+    int ret = QMessageBox::question(this, tr("Confirm"), tr("Do you really want to delete all the events and categories of the current database?"), QMessageBox::Yes | QMessageBox::No);
     if (ret == QMessageBox::Yes) {
         this->pm->remove_db();
         if (this->pm->get_db_name() == DEFAULT_DATABASE_NAME) {
@@ -345,9 +368,9 @@ void MonthView::delete_db() {
 }
 
 void MonthView::load_database() {
-    QString path = QFileDialog::getOpenFileName(this, "Load events and categories", QDir::homePath(), "Kalendar Files (*.kal)");
+    QString path = QFileDialog::getOpenFileName(this, tr("Load events and categories"), QDir::homePath(), tr("Kalendar Files (*.kal)"));
     if (path != "") {
-        CustomDialog *custom_dialog = this->show_progress_bar("Loading events and categories...");
+        CustomDialog *custom_dialog = this->show_progress_bar(tr("Loading events and categories..."));
         QFuture<int> ret =  QtConcurrent::run([this,path] { return this->pm->load_db(path.toStdString()); });
         while (!ret.isFinished()) {
             QCoreApplication::processEvents();
@@ -355,41 +378,42 @@ void MonthView::load_database() {
         int result = ret.result();
         refresh_events();
         custom_dialog->close();
-        QMessageBox::information(this, "Success", "Loaded " + QString::number(result) + " events/categories", QMessageBox::Ok);
+        QMessageBox::information(this, tr("Success"), tr("Loaded ") + QString::number(result) + tr(" events/categories"), QMessageBox::Ok);
     }
 }
 
 void MonthView::save_database() {
-    QString path = QFileDialog::getSaveFileName(this, "Save events and categories", QDir::homePath(), "Kalendar Files (*.kal)");
+    QString path = QFileDialog::getSaveFileName(this, tr("Save events and categories"), QDir::homePath(), tr("Kalendar Files (*.kal)"));
     if (path != "") {
-        CustomDialog *custom_dialog = this->show_progress_bar("Saving events and categories...");
+        CustomDialog *custom_dialog = this->show_progress_bar(tr("Saving events and categories..."));
         QFuture<int> ret =  QtConcurrent::run([this,path] { return this->pm->save_db(path.toStdString()); });
         while (!ret.isFinished()) {
             QCoreApplication::processEvents();
         }
         int result = ret.result();
         custom_dialog->close();
-        QMessageBox::information(this, "Success", "Saved " + QString::number(result) + " events/categories", QMessageBox::Ok);
+        QMessageBox::information(this, tr("Success"), tr("Saved ") + QString::number(result) + tr(" events/categories"), QMessageBox::Ok);
     }
 }
 
 void MonthView::export_events() {
-    QString path = QFileDialog::getSaveFileName(this, "Export events to other calendars", QDir::homePath(), "iCal Files (*.ics)");
+    QString path = QFileDialog::getSaveFileName(this, tr("Export events to other calendars"), QDir::homePath(), tr("iCal Files (*.ics)"));
     Category *c = NULL;
     if (path != "") {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Export from single category", "Do you want export only the events belonging to a specific category?", QMessageBox::Yes|QMessageBox::No);
+        reply = QMessageBox::question(this, tr("Export from single category"), tr("Do you want export only the events belonging to a specific category?"), QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes) {
-            CategorySelectDialog *dialog = new CategorySelectDialog(this,"Select from which category export the events: ");
+            CategorySelectDialog *dialog = new CategorySelectDialog(this,tr("Select from which category export the events: "));
             dialog->setModal(true);
             dialog->exec(); //Blocking call
             c = dialog->getSelectedCategory();
+            delete dialog;
         }
-        QMessageBox::information(this, "Please wait", "Exporting events may requires some minutes", QMessageBox::Ok);
+        QMessageBox::information(this, tr("Please wait"), tr("Exporting events may requires some minutes"), QMessageBox::Ok);
         list<Event*> events = this->pm->get_events(c);
         int result = this->pm->export_db_iCal_format(events,path.toStdString());
         for (Event *event : events) delete event;
-        QMessageBox::information(this, "Success", "Exported " + QString::number(result) + " events", QMessageBox::Ok);
+        QMessageBox::information(this, tr("Success"), tr("Exported ") + QString::number(result) + tr(" events"), QMessageBox::Ok);
     }
 }
 
@@ -408,17 +432,17 @@ CustomDialog* MonthView::show_progress_bar(QString title) {
 }
 
 void MonthView::import_events() {
-    QString path = QFileDialog::getOpenFileName(this, "Import events from other calendars", QDir::homePath(), "iCal Files (*.ics)");
+    QString path = QFileDialog::getOpenFileName(this, tr("Import events from other calendars"), QDir::homePath(), tr("iCal Files (*.ics)"));
     if (path != "") {
-        CategorySelectDialog *dialog = new CategorySelectDialog(this,"Select a category for the imported events: ");
+        CategorySelectDialog *dialog = new CategorySelectDialog(this,tr("Select a category for the imported events: "));
         dialog->setModal(true);
         dialog->exec(); //Blocking call
         if (dialog->getSelectedCategory() != NULL) {
             unsigned int category_id = dialog->getSelectedCategory()->getId();
             Category *category = pm->get_category(category_id);
-            delete dialog->getSelectedCategory();
-            QMessageBox::information(this, "Please wait", "Importing events may requires some minutes", QMessageBox::Ok);
-            CustomDialog *custom_dialog = this->show_progress_bar("Importing events...");
+            //delete dialog->getSelectedCategory();
+            QMessageBox::information(this, tr("Please wait"), tr("Importing events may requires some minutes"), QMessageBox::Ok);
+            CustomDialog *custom_dialog = this->show_progress_bar(tr("Importing events..."));
             QFuture<int> ret =  QtConcurrent::run([this,path,category] { return this->pm->import_db_iCal_format(path.toStdString(),category); });
             while (!ret.isFinished()) {
                 QCoreApplication::processEvents();
@@ -426,8 +450,9 @@ void MonthView::import_events() {
             int result = ret.result();
             refresh_events();
             custom_dialog->close();
-            QMessageBox::information(this, "Success", "Imported " + QString::number(result) + " events", QMessageBox::Ok);
+            QMessageBox::information(this, tr("Success"), tr("Imported ") + QString::number(result) + tr(" events"), QMessageBox::Ok);
         }
+        delete dialog;
     }
 }
 
@@ -463,8 +488,8 @@ void MonthView::show_agenda(bool only_todos) {
     header->setStyleSheet("QLabel { background-color: #ffffb3; border-bottom: 1px solid #000000; margin-bottom: 2px; }");
     header->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     Date today = DateUtil::get_current_date();
-    QString title(" Event(s)");
-    if (only_todos) title = QString(" TODO(s)");
+    QString title(tr(" Event(s)"));
+    if (only_todos) title = QString(tr(" TODO(s)"));
     int list_size = events_list.size();
     for (Event *event : events_list) {
         QHBoxLayout *hl = new QHBoxLayout;
@@ -495,7 +520,7 @@ void MonthView::show_agenda(bool only_todos) {
     main_layout->addWidget(scroll_area);
     CustomDialog *custom_dialog = new CustomDialog(main_layout);
     custom_dialog->setFixedWidth(500);
-    custom_dialog->setWindowTitle("Agenda");
+    custom_dialog->setWindowTitle(tr("Agenda"));
     custom_dialog->show();
 }
 
@@ -509,6 +534,7 @@ void MonthView::display_days(Date date) {
 
     //first week day of the current month
     start_wday = DateUtil::get_first_day_of_month(date).getWeekDay();
+    
     x = 1;
     for (i = 0; i < 42; i++) {
         //Set an invalid date
@@ -533,7 +559,11 @@ void MonthView::display_days(Date date) {
                 day->setObjectName("today");
             this->frames[i]->layout()->addWidget(day);
             //check if the current frame refers to an holiday (i.e. saturday or sunday)
-            if ((i % 7) > 4) { //frame in the last two columns
+#ifdef WEEK_START_MONDAY
+            if ((i % 7) > 4) {
+#else
+            if ((i % 7) > 5 || (i % 7) == 0 ) { //frame in the first and last column
+#endif
                 //mark the cell as an holiday
                 this->frames[i]->setObjectName("holiday");
             } else { //is a generic day
@@ -599,7 +629,9 @@ void MonthView::display_events(Date date, Category *category) {
                 this->selected_event = label_event;
             }
             if (this->frames[i]->children().size() == 5) {
-                QPushButtonExtended *button_show_all = new QPushButtonExtended("Show All");
+                QString show = QObject::tr("Show All");
+                string Show = show.toStdString();
+                QPushButtonExtended *button_show_all = new QPushButtonExtended(Show.c_str());
                 button_show_all->setIndex(i);
                 connect(button_show_all, &QPushButtonExtended::on_click, this, &MonthView::on_button_extended_click);
                 this->frames[i]->layout()->addWidget(button_show_all);
@@ -659,7 +691,7 @@ void MonthView::on_button_extended_click(int index) {
     main_layout->addWidget(frame);
     CustomDialog *custom_dialog = new CustomDialog(main_layout);
     custom_dialog->setFixedWidth(400);
-    custom_dialog->setWindowTitle("Day Dialog");
+    custom_dialog->setWindowTitle(tr("Day Dialog"));
     custom_dialog->show();
 }
 

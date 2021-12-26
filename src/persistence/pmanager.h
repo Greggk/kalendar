@@ -50,6 +50,8 @@ public:
     bool remove_category(Category *c);
     vector<Category*> get_categories();
     Category *get_category(unsigned int id);
+    unsigned int get_setting(unsigned int id);
+    bool replace_setting(unsigned int setting_id, unsigned int new_value);
     bool remove_past_events(time_t timestamp);
     int save_db(string path);
     int export_db_iCal_format(list<Event *> events, string path);

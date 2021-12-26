@@ -1,5 +1,5 @@
 #include "pmanager.h"
-
+#include <iostream>
 #include <QDebug>
 
 PManager::PManager(string database)
@@ -22,12 +22,20 @@ void PManager::init_db(string db_name) {
         sqlite3_close(this->db);
     }
     /* Open the database (will be created if it doesn't exist) */
+#ifndef __OS2__
     this->db_folder = string(getpwuid(getuid())->pw_dir) + string("/" FOLDER_NAME "/");
+#else
+    this->db_folder = string(getenv("HOME")) + string("/" FOLDER_NAME "/");
+#endif
     this->db_path = this->db_folder + string(db_name);
     ifstream dbfile(this->db_path.c_str());
     bool db_not_exists = !dbfile;
     if (db_not_exists) {
+#ifndef __OS2__
         mkdir((string(getpwuid(getuid())->pw_dir) + string("/" FOLDER_NAME)).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#else
+        mkdir((string(getenv("HOME")) + string("/" FOLDER_NAME)).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
         ofstream new_dbfile(this->db_path.c_str());
         new_dbfile.close();
     }
@@ -44,11 +52,14 @@ void PManager::init_db(string db_name) {
 
     if (db_not_exists) {
         const char *sql = "CREATE TABLE Categories(id UNSIGNED INTEGER PRIMARY KEY, name TEXT, color TEXT);"
+                          "CREATE TABLE Settings(id UNSIGNED INTEGER PRIMARY KEY, name TEXT, value UNSIGNED INTEGER);"
                           "CREATE TABLE Events(id UNSIGNED INTEGER PRIMARY KEY, name TEXT, description TEXT,"
                           "place TEXT, category UNSIGNED INTEGER, start DATETIME, end DATETIME, child UNSIGNED INTEGER,"
                           "FOREIGN KEY(category) REFERENCES Categories(id) ON DELETE RESTRICT,"
                           "FOREIGN KEY(child) REFERENCES Events(id) ON DELETE CASCADE);"
                           "INSERT INTO Categories VALUES(1, 'Default', '#1022A0');"
+                          "INSERT INTO Categories VALUES(2, 'All', '#1022A0');"
+                          "INSERT INTO Settings VALUES(1, 'Retain_for', '0');"
                           "PRAGMA foreign_keys = ON;";
 
         rc = sqlite3_exec(this->db, sql, 0, 0, &err_msg);
@@ -72,9 +83,9 @@ string PManager::get_db_name() {
 
 vector<string> PManager::get_db_list() {
     vector<string> db_list;
-    for (filesystem::directory_entry e : filesystem::directory_iterator(this->db_path.substr(0, this->db_path.find_last_of('/') ))) {
-        filesystem::path p = e.path();
-        if (p.extension() == ".sql")
+    for (filesystem::directory_entry e : filesystem::directory_iterator(this->db_path.substr(0, this->db_path.find_last_of('\\') ))) {
+                filesystem::path p = e.path();
+        if (p.extension() == ".sql") 
             db_list.push_back(p.filename());
     }
     return db_list;
@@ -160,20 +171,6 @@ bool PManager::replace_event(Event *old_event, Event *new_event) {
     }
     //free memory
     sqlite3_finalize(stmt);
-    return true;
-}
-
-bool PManager::replace_category(Category *old_category, Category *new_category) {
-    char *err_msg = 0;
-    char sql[1024];
-    if (new_category->getName().length() < 3) return false;
-    snprintf(sql, 1024, "UPDATE Categories SET name='%s', color='%s' WHERE id=%u;", filterSpecialChars(new_category->getName()).c_str(), filterSpecialChars(new_category->getColor()).c_str(), old_category->getId());
-    int rc = sqlite3_exec(this->db, sql, 0, 0, &err_msg);
-    if (rc != SQLITE_OK ) {
-        fprintf(stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free(err_msg);
-        return false;
-    }
     return true;
 }
 
@@ -303,6 +300,20 @@ bool PManager::add_category(Category *c) {
     return true;
 }
 
+bool PManager::replace_category(Category *old_category, Category *new_category) {
+    char *err_msg = 0;
+    char sql[1024];
+    if (new_category->getName().length() < 3) return false;
+    snprintf(sql, 1024, "UPDATE Categories SET name='%s', color='%s' WHERE id=%u;", filterSpecialChars(new_category->getName()).c_str(), filterSpecialChars(new_category->getColor()).c_str(), old_category->getId());
+    int rc = sqlite3_exec(this->db, sql, 0, 0, &err_msg);
+    if (rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return false;
+    }
+    return true;
+}
+
 vector<Category*> PManager::get_categories() {
     vector<Category*> result;
     sqlite3_stmt *res;
@@ -358,6 +369,35 @@ Category* PManager::get_category(unsigned int id) {
         return NULL;
 }
 
+bool PManager::replace_setting(unsigned int setting_id, unsigned int new_value) {
+    char *err_msg = 0;
+    char sql[1024];
+    snprintf(sql, 1024, "UPDATE Settings SET value='%u' WHERE id=%u;", new_value, setting_id);
+    int rc = sqlite3_exec(this->db, sql, 0, 0, &err_msg);
+    if (rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return false;
+    }
+    return true;
+}
+
+unsigned int PManager::get_setting(unsigned int id) {
+    sqlite3_stmt *res;
+    char sql[1024];
+    snprintf(sql, 1024, "SELECT * FROM Settings WHERE id = %u;", id);
+    int rc = sqlite3_prepare_v2(this->db, sql, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to fetch data: %s\n", sqlite3_errmsg(db));
+        return 0;
+    }
+    if ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        unsigned long value = (unsigned long)sqlite3_column_int(res, 2);
+        sqlite3_finalize(res);
+        return value;
+    } else
+        return 0;
+}
 bool PManager::remove_past_events(time_t timestamp) {
     char *err_msg = 0;
     char sql[1024];
