@@ -51,9 +51,19 @@ You should get the Kalendar executable inside the same folder.
 
 Note: Kalendar will create the following folder: ~/kalendar, so remember to delete it if you decide to delete Kalendar.
 
+### Compilation OS/2
+
+You need to install also `sqlite3` developer package. On Fedora the package is called `sqlite-devel`. 
+
+You need the QT5 devel packages (core and gui) also 0n netlabs.
+
+Rename makefile.OS2 makefile and run make or run make -f makefile.os2
+
+You make need to run qmake first but still use the makefile.os2 for building.
+
 ### Further Notes
 
-In the `tools` folder, you can put **sh** or **bat** scripts that will be integrated in the tools menu of the application. The plugins at the moment are only external tools. They require to run `kalendar` without the absolute path, so (on linux) you should create the script `/bin/kalendar` with the following content:
+In the `tools` folder, you can put **sh** or **bat** (**cmd** or **bmt** on OS2) scripts that will be integrated in the tools menu of the application. The plugins at the moment are only external tools. They require to run `kalendar` without the absolute path, so (on linux) you should create the script `/bin/kalendar` with the following content:
 
 ```
 #! /bin/bash
